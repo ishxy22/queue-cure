@@ -1,12 +1,13 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Receptionist from "./pages/Receptionist";
+import WaitingRoom from "./pages/WaitingRoom";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Receptionist />} />
-        {/* Day 4 mein WaitingRoom add karenge */}
+        <Route path="/waiting" element={<WaitingRoom />} />
       </Routes>
     </BrowserRouter>
   );
