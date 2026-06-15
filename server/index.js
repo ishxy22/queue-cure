@@ -66,11 +66,12 @@ async function broadcastQueue() {
 app.post('/api/patients', async (req, res) => {
   try {
     const { name } = req.body;
-    if (!name || name.trim() === '') {
-      return res.status(400).json({ error: 'Patient name is required' });
+
+    // ✅ Updated validation — empty + min 2 chars check
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ error: 'Valid naam daalo (min 2 characters)' });
     }
 
-    // Get highest token number atomically
     const lastPatient = await Patient.findOne().sort({ tokenNumber: -1 });
     const queue = await Queue.findOne();
     const lastToken = lastPatient ? lastPatient.tokenNumber : (queue ? queue.currentToken : 0);
