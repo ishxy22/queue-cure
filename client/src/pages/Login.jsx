@@ -24,21 +24,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-100">
+          <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/30">
             <span className="text-white text-2xl font-bold">Q</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Staff Login</h1>
-          <p className="text-gray-400 text-sm mt-1">Queue Cure — Receptionist Access</p>
+          <h1 className="text-2xl font-bold text-white">Staff Login</h1>
+          <p className="text-gray-500 text-sm mt-1">Queue Cure — Receptionist Access</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <label className="text-xs text-gray-400 uppercase tracking-wide font-medium block mb-2">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur">
+          <label className="text-xs text-gray-500 uppercase tracking-widest font-medium block mb-2">
             Clinic Password
           </label>
           <input
@@ -47,7 +47,7 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             placeholder="Enter password..."
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 mb-4"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500 mb-4"
           />
           {error && (
             <p className="text-red-400 text-xs mb-4">{error}</p>
@@ -55,27 +55,23 @@ export default function Login() {
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="w-full bg-blue-500 text-white py-3 rounded-xl font-medium hover:bg-blue-600 transition disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 rounded-xl font-medium hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-violet-500/25"
           >
             {loading ? "Logging in..." : "Login →"}
           </button>
         </div>
 
-        {/* Back link */}
         <p className="text-center mt-4">
           <button
             onClick={() => navigate("/")}
-            className="text-gray-400 text-sm hover:text-gray-600 transition"
+            className="text-gray-600 text-sm hover:text-gray-400 transition"
           >
             ← Back to home
           </button>
         </p>
-
-        {/* Hint */}
-        <p className="text-center text-gray-300 text-xs mt-6">
+        <p className="text-center text-gray-700 text-xs mt-4">
           Default password: clinic123
         </p>
-
       </div>
     </div>
   );
