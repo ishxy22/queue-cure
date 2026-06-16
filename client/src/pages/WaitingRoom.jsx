@@ -9,17 +9,38 @@ export default function WaitingRoom() {
     avgConsultTime: 10,
     waitingPatients: [],
   });
-  const [pulse, setPulse] = useState(false);
+   const [pulse, setPulse] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [myToken, setMyToken] = useState("");
+  const [myTokenInput, setMyTokenInput] = useState("");
+  const [isCalled, setIsCalled] = useState(false);
 
   useEffect(() => {
     socket.on("queue:updated", (data) => {
       setQueue(data);
-      // Pulse animation jab token call ho
+      setIsPaused(data.isPaused);
       setPulse(true);
       setTimeout(() => setPulse(false), 1000);
+
+      // Check if my token was just called
+      if (myToken && data.currentToken === Number(myToken)) {
+        setIsCalled(true);
+        // Play beep sound
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.frequency.value = 880;
+        oscillator.type = "sine";
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 1.5);
+      }
     });
     return () => socket.off("queue:updated");
-  }, []);
+  }, [myToken]);
 
   return (
     <div className="min-h-screen bg-blue-50 flex flex-col items-center justify-start p-6">
@@ -29,6 +50,43 @@ export default function WaitingRoom() {
         <h1 className="text-xl font-semibold text-blue-800">Queue Cure Clinic</h1>
         <p className="text-blue-400 text-sm">Live Queue Display</p>
       </div>
+
+      {/* My Token Alert */}
+      {isCalled ? (
+        <div className="w-full max-w-2xl mb-6 bg-green-500 text-white rounded-2xl p-6 text-center animate-pulse">
+          <p className="text-4xl mb-2">🔔</p>
+          <p className="text-2xl font-bold">Your Turn! Token #{myToken}</p>
+          <p className="text-green-100 text-sm mt-1">Please proceed to the doctor's cabin</p>
+          <button
+            onClick={() => { setIsCalled(false); setMyToken(""); setMyTokenInput(""); }}
+            className="mt-4 bg-white text-green-600 px-4 py-2 rounded-lg text-sm font-medium"
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : (
+        <div className="w-full max-w-2xl mb-6 bg-white rounded-2xl border border-blue-100 p-4">
+          <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Track your token</p>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              value={myTokenInput}
+              onChange={(e) => setMyTokenInput(e.target.value)}
+              placeholder="Enter your token number"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            />
+            <button
+              onClick={() => setMyToken(myTokenInput)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+            >
+              Track
+            </button>
+          </div>
+          {myToken && (
+            <p className="text-green-600 text-xs mt-2">✅ Tracking token #{myToken} — we'll alert you</p>
+          )}
+        </div>
+      )}
 
       {/* Now Serving — Big Card */}
       <div
@@ -88,6 +146,12 @@ export default function WaitingRoom() {
       </div>
 
       {/* Footer */}
+      {isPaused && (
+        <div className="w-full max-w-2xl mt-4 bg-yellow-100 border border-yellow-300 rounded-xl p-4 text-center">
+          <p className="text-yellow-700 font-medium">⏸ Queue is paused — please wait</p>
+          <p className="text-yellow-500 text-xs mt-1">The receptionist will resume shortly</p>
+        </div>
+      )}
       <p className="text-blue-300 text-xs mt-6">Updates live — no refresh needed</p>
     </div>
   );

@@ -19,7 +19,8 @@ const io = new Server(httpServer, {
 // ─── MongoDB Models ───────────────────────────────────────────
 const queueSchema = new mongoose.Schema({
   currentToken: { type: Number, default: 0 },
-  avgConsultTime: { type: Number, default: 10 }
+  avgConsultTime: { type: Number, default: 10 },
+  isPaused: { type: Boolean, default: false }          // ✅ Feature 1
 });
 const Queue = mongoose.model('Queue', queueSchema);
 
@@ -27,7 +28,9 @@ const patientSchema = new mongoose.Schema({
   tokenNumber: { type: Number, required: true },
   name: { type: String, required: true },
   status: { type: String, default: 'waiting' },
-  addedAt: { type: Date, default: Date.now }
+  addedAt: { type: Date, default: Date.now },
+  calledAt: { type: Date, default: null },             // ✅ Feature 3
+  completedAt: { type: Date, default: null }           // ✅ Feature 3
 });
 const Patient = mongoose.model('Patient', patientSchema);
 
@@ -50,6 +53,7 @@ async function getQueueState() {
   return {
     currentToken: queue.currentToken,
     avgConsultTime: queue.avgConsultTime,
+    isPaused: queue.isPaused,                          // ✅ Feature 1
     waitingPatients: patientsWithWait
   };
 }
@@ -66,8 +70,6 @@ async function broadcastQueue() {
 app.post('/api/patients', async (req, res) => {
   try {
     const { name } = req.body;
-
-    // ✅ Updated validation — empty + min 2 chars check
     if (!name || name.trim().length < 2) {
       return res.status(400).json({ error: 'Valid naam daalo (min 2 characters)' });
     }
@@ -94,8 +96,41 @@ app.post('/api/queue/call-next', async (req, res) => {
     }
 
     const nextPatient = waitingPatients[0];
-    await Patient.findByIdAndUpdate(nextPatient._id, { status: 'called' });
-    await Queue.findOneAndUpdate({}, { currentToken: nextPatient.tokenNumber }, { upsert: true });
+
+    // ✅ Feature 3 — mark calledAt on the new patient
+    await Patient.findByIdAndUpdate(nextPatient._id, {
+      status: 'called',
+      calledAt: new Date()
+    });
+
+    // ✅ Feature 3 — mark previous 'called' patients as completed
+    await Patient.updateMany(
+      { status: 'called', _id: { $ne: nextPatient._id } },
+      { status: 'completed', completedAt: new Date() }
+    );
+
+    await Queue.findOneAndUpdate(
+      {},
+      { currentToken: nextPatient.tokenNumber },
+      { upsert: true }
+    );
+
+    // ✅ Feature 3 — auto-calculate avg time from last 5 completed patients
+    const recentCompleted = await Patient.find({
+      status: 'completed',
+      calledAt: { $ne: null },
+      completedAt: { $ne: null }
+    }).sort({ completedAt: -1 }).limit(5);
+
+    if (recentCompleted.length >= 2) {
+      const totalTime = recentCompleted.reduce((sum, p) => {
+        return sum + (new Date(p.completedAt) - new Date(p.calledAt)) / 60000;
+      }, 0);
+      const autoAvg = Math.round(totalTime / recentCompleted.length);
+      if (autoAvg > 0) {
+        await Queue.findOneAndUpdate({}, { avgConsultTime: autoAvg }, { upsert: true });
+      }
+    }
 
     await broadcastQueue();
     res.json({ success: true, calledToken: nextPatient.tokenNumber });
@@ -117,11 +152,24 @@ app.patch('/api/queue/avg-time', async (req, res) => {
   }
 });
 
+// ✅ Feature 1 — Pause / Resume queue
+app.post('/api/queue/toggle-pause', async (req, res) => {
+  try {
+    const queue = await Queue.findOne();
+    const newState = !queue.isPaused;
+    await Queue.findOneAndUpdate({}, { isPaused: newState }, { upsert: true });
+    await broadcastQueue();
+    res.json({ success: true, isPaused: newState });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Reset queue
 app.post('/api/queue/reset', async (req, res) => {
   try {
     await Patient.deleteMany({});
-    await Queue.findOneAndUpdate({}, { currentToken: 0 }, { upsert: true });
+    await Queue.findOneAndUpdate({}, { currentToken: 0, isPaused: false }, { upsert: true });
     await broadcastQueue();
     res.json({ success: true });
   } catch (err) {
