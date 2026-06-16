@@ -82,9 +82,17 @@ export default function Receptionist() {
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-800">Receptionist Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-1">Queue Cure — Live Queue Management</p>
+        <div className="mb-6 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800">Receptionist Dashboard</h1>
+            <p className="text-gray-500 text-sm mt-1">Queue Cure — Live Queue Management</p>
+          </div>
+          <button
+            onClick={() => { localStorage.removeItem("isReceptionist"); window.location.href = "/"; }}
+            className="text-xs text-gray-400 hover:text-red-400 transition"
+          >
+            Logout
+          </button>
         </div>
 
         {/* ✅ Feature 1 — Paused Banner */}

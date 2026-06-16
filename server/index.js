@@ -187,6 +187,16 @@ app.get('/api/queue', async (req, res) => {
   }
 });
 
+// Receptionist login
+app.post('/api/login', (req, res) => {
+  const { password } = req.body;
+  if (password === process.env.RECEPTIONIST_PASSWORD || password === 'clinic123') {
+    res.json({ success: true, token: 'receptionist-auth-token' });
+  } else {
+    res.status(401).json({ error: 'Wrong password' });
+  }
+});
+
 // ─── Socket.IO ────────────────────────────────────────────────
 io.on('connection', async (socket) => {
   console.log('Client connected:', socket.id);
